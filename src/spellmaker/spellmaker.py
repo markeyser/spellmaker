@@ -122,11 +122,11 @@ class SpellMaker:
         ```
         numpy==1.19.2
         pandas==1.2.0
-        pip install mylib==0.1.0
+        black
         # This is a comment
         ```
         The function will return:
-        ['numpy', 'pandas', 'mylib']
+        ['numpy', 'pandas', 'black']
     
         Notes
         -----
@@ -137,7 +137,8 @@ class SpellMaker:
         try:
             with open(self.requirements_path, "r") as req:
                 for line in req:
-                    if not line.startswith("#"):
+                    line = line.strip()  # Remove leading and trailing whitespaces
+                    if not line.startswith("#") and line:  # Ignore comments and empty lines
                         library = line.split("==")[0] if "==" in line else line.split(" ")[-1]
                         libraries.append(library)
         except FileNotFoundError:
@@ -205,13 +206,16 @@ class SpellMaker:
         
         return terms
 
-    def generate_spell_dict(self):
+    def generate_spell_dict(self, output_path=None):
         """
-        Generates a comprehensive list of terms from all libraries listed in the `requirements.txt` file.
+        Generates a comprehensive list of terms from all libraries listed in the `requirements.txt` file
+        and writes them to the specified output path or a default path if none is provided.
     
-        The function iterates over each library mentioned in the `requirements.txt` file, 
-        processes each library using the `process_library` method, and accumulates 
-        all terms, including library names, functions, classes, and methods.
+        Parameters
+        ----------
+        output_path : str or pathlib.Path, optional
+            The path where the generated spell dictionary should be written. 
+            If not provided, it will use a default path `.vscode/dictionaries/data-science-en.txt`.
     
         Returns
         -------
@@ -244,78 +248,56 @@ class SpellMaker:
         for library_name in libraries:
             terms = self.process_library(library_name)
             all_terms.extend(terms)
+    
+        # Set a default output path if none is provided
+        if output_path is None:
+            output_path = ".vscode/dictionaries/data-science-en.txt"
+    
+        # Write the terms to the output path
+        with open(output_path, "w") as f:
+            for term in all_terms:
+                f.write(term + "\n")
+    
         return all_terms
 
-    def write_to_file(self, terms):
+
+    def write_to_file(self, terms, output_path):
         """
-        Writes the collected terms to the specified output file.
-    
-        This function takes a list of terms and writes each term to a new line 
-        in the specified output file. The output file's path is determined by the 
-        `output_path` attribute of the `SpellMaker` class.
-    
+        Write the provided terms to the specified output file.
+
         Parameters
         ----------
-        terms : list
-            A list of terms (like library names, functions, classes, and methods) 
-            to be written to the output file.
-    
-        Notes
-        -----
-        - If the specified output directory does not exist, the write operation 
-          might fail. Ensure the directory structure exists.
-        - This function overwrites the content of the output file if it already exists.
-    
-        Example
+        terms : list of str
+            The list of terms to be written to the file.
+        
+        output_path : str or Path
+            The path to the output file where terms will be written.
+
+        Returns
         -------
-        Given a list of terms:
-        ['numpy', 'ndarray', 'dot', 'pandas', 'DataFrame']
-    
-        The output file will contain:
-        ```
-        numpy
-        ndarray
-        dot
-        pandas
-        DataFrame
-        ```
-    
+        None
         """
-        with open(self.output_path, "w") as f:
+        with open(output_path, "w") as f:
             for term in terms:
                 f.write(term + "\n")
-        print(f"Dictionary generated at {self.output_path}")
 
-    def create_spell_dict(self):
+    def create_spell_dict(self, output_path):
         """
-        Generates and writes the custom spell check dictionary to the specified output file.
-    
-        This is the main method of the `SpellMaker` class. It orchestrates the process 
-        of generating a custom dictionary by:
-        1. Extracting library names from the `requirements.txt` file.
-        2. Processing each library to gather relevant terms.
-        3. Writing the accumulated terms to the specified output file.
-    
-        The paths for the `requirements.txt` file and the output file are determined 
-        by the `requirements_path` and `output_path` attributes, respectively.
-    
+        Generates a comprehensive spell dictionary from the libraries listed in the `requirements.txt` file 
+        and writes the terms to the specified output file.
+
+        Parameters
+        ----------
+        output_path : str or Path
+            The path to the file where the generated spell dictionary will be written.
+
         Notes
         -----
-        - The function relies on the `get_libraries_from_requirements`, 
-          `process_library`, and `write_to_file` methods for its operation.
-        - Any existing content in the output file will be overwritten.
-        - If any library listed in the `requirements.txt` is not installed or 
-          is inaccessible, it will be skipped and a warning will be printed.
-    
-        Example
-        -------
-        >>> maker = SpellMaker()
-        >>> maker.create_spell_dict()
-        Dictionary generated at .vscode/dictionaries/data-science-en.txt
-    
+        - This method uses the `generate_spell_dict` to get the terms and then writes them to the file 
+          using the `write_to_file` method.
         """
         terms = self.generate_spell_dict()
-        self.write_to_file(terms)
+        self.write_to_file(terms, output_path)
 
 
 if __name__ == '__main__':
